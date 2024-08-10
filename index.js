@@ -1,12 +1,10 @@
-require('dotenv').config(); // Add this line at the top of your file
-
 const express = require("express");
 const mongoose = require("mongoose");
 const app = express();
 const port = process.env.PORT || 5000;  // Use environment variable for port
 
 // MongoDB connection
-mongoose.connect(process.env.MONGODB_URI, {  // Use environment variable for MongoDB URI
+mongoose.connect("mongodb+srv://ameeqahmad05:ameeq25012003@blogapp.f1jim.mongodb.net/?retryWrites=true&w=majority&appName=blogapp", {
     useNewUrlParser: true,
     useUnifiedTopology: true
 });
