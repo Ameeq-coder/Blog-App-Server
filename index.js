@@ -1,10 +1,12 @@
+require('dotenv').config(); // Add this line at the top of your file
+
 const express = require("express");
 const mongoose = require("mongoose");
 const app = express();
-const port = process.env.PORT || 5000;  // Change `port` to `PORT`
+const port = process.env.PORT || 5000;  // Use environment variable for port
 
 // MongoDB connection
-mongoose.connect("mongodb://localhost:27017/AppDb", {
+mongoose.connect(process.env.MONGODB_URI, {  // Use environment variable for MongoDB URI
     useNewUrlParser: true,
     useUnifiedTopology: true
 });
@@ -16,10 +18,9 @@ db.once('open', () => {
     console.log("Successfully connected to MongoDB");
 });
 
-
 app.use(express.json());
-const userRoute=require("./routes/user")
-app.use("/user",userRoute);
+const userRoute = require("./routes/user");
+app.use("/user", userRoute);
 
 // Define routes
 app.route("/").get((req, res) => res.json("your first rest api 2"));
