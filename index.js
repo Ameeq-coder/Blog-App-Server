@@ -4,7 +4,7 @@ const app = express();
 const port = process.env.PORT || 5000;  // Use environment variable for port
 
 
-mongoose.connect("mongodb+srv://ameeqahmad05:ameeq25012003@blogapp.f1jim.mongodb.net/?retryWrites=true&w=majority&appName=blogapp", {
+mongoose.cnect("mongodb+srv://ameeqahmad05:ameeq25012003@blogapp.f1jim.mongodb.net/?retryWrites=true&w=majority&appName=blogapp", {
  
 });
 const db = mongoose.connection;
