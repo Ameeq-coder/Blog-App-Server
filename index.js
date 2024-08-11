@@ -2,6 +2,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const app = express();
 const port = process.env.PORT || 5000;  // Use environment variable for port
+const cors = require('cors')
 
 
 mongoose.connect("mongodb+srv://ameeqahmad05:ameeq25012003@blogapp.f1jim.mongodb.net/?retryWrites=true&w=majority&appName=blogapp", {
@@ -15,6 +16,7 @@ db.once('open', () => {
 });
 
 app.use(express.json());
+app.use(cors());
 const userRoute = require("./routes/user");
 app.use("/user", userRoute);
 
