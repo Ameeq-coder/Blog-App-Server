@@ -3,6 +3,28 @@ const bcrypt = require('bcryptjs');
 const User = require("../models/user.model");
 
 const router = express.Router();
+router.route("/login").post(async (req, res) => {
+    try {
+      const result = await User.findOne({ email: req.body.email });
+  
+      if (!result) {
+        return res.status(403).json("Incorrect Email");
+      }
+
+      const isMatch = await bcrypt.compare(req.body.password, result.password);
+  
+      if (isMatch) {
+        // TODO: Implement JWT token generation here
+        res.json("Login Successfully");
+      } else {
+        res.status(403).json("Password is incorrect");
+      }
+    } catch (err) {
+      res.status(500).json({ msg: err.message });
+    }
+  });
+  
+
 
 router.get('/createdusers', async (req, res) => {
     try {
