@@ -24,7 +24,7 @@ router.route("/login").post(async (req, res) => {
         });
         res.json({
           token:token,
-          msg:"sucess"
+          msg:"Login Successfully"
         });
         res.json("Login Successfully");
       } else {
