@@ -58,27 +58,32 @@ router.post("/register", async (req, res) => {
         res.status(403).json({ msg: err.message });
     }
 });
+
 router.route("/update/:email").patch(async (req, res) => {
-    try {
-      const result = await User.findOneAndUpdate(
-        { email: req.params.email },
-        { $set: { password: req.body.hashedPassword } },
-        { new: true } // This option ensures that the updated document is returned
-      );
-  
-      if (!result) {
-        return res.status(404).json({ msg: "User not found" });
-      }
-  
-      const msg = {
-        msg: "Password successfully updated",
-        email: req.params.email,
-      };
-      
-      res.status(200).json(msg);
-    } catch (err) {
-      return res.status(500).json({ msg: err.message });
+  try {
+    // Hash the new password before updating it
+    const hashedPassword = await bcrypt.hash(req.body.password, 10);
+
+    const result = await User.findOneAndUpdate(
+      { email: req.params.email },
+      { $set: { password: hashedPassword } },
+      { new: true } // This option ensures that the updated document is returned
+    );
+
+    if (!result) {
+      return res.status(404).json({ msg: "User not found" });
     }
-  });
+
+    const msg = {
+      msg: "Password successfully updated",
+      email: req.params.email,
+    };
+    
+    res.status(200).json(msg);
+  } catch (err) {
+    return res.status(500).json({ msg: err.message });
+  }
+});
+
   
 module.exports = router;
