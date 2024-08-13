@@ -26,7 +26,6 @@ router.route("/login").post(async (req, res) => {
           token:token,
           msg:"Login Successfully"
         });
-        res.json("Login Successfully");
       } else {
         res.status(403).json("Password is incorrect");
       }
