@@ -59,12 +59,13 @@ router.post("/register", async (req, res) => {
         const user = new User({
             email,
             password: hashedPassword,
+            categories: [] // Initialize with an empty array
         });
 
         await user.save();
         console.log("User registered");
-        res.status(200).json("User registered successfully");
-    } catch (err) {
+        res.status(200).json({ msg: "User registered successfully", userId: user._id });
+} catch (err) {
         res.status(403).json({ msg: err.message });
     }
 });
