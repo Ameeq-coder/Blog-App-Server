@@ -96,5 +96,27 @@ router.route("/update/:email").patch( async (req, res) => {
   }
 });
 
+router.patch("/:userId/categories", async (req, res) => {
+  const { userId } = req.params;
+  const { categories } = req.body;
+
+  try {
+      const user = await User.findById(userId);
+
+      if (!user) {
+          return res.status(404).json({ msg: "User not found" });
+      }
+
+      user.categories = categories;
+      await user.save();
+
+      res.status(200).json({ msg: 'Categories updated successfully', categories: user.categories });
+
+  } catch (err) {
+      res.status(500).json({ msg: err.message });
+  }
+});
+
+
   
 module.exports = router;
