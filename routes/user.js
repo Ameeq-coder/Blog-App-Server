@@ -23,6 +23,7 @@ router.route("/login").post(async (req, res) => {
           expiresIn:"24h"
         });
         res.json({
+          userId: result._id,  // Including userId in the response
           token:token,
           msg:"Login Successfully"
         });
