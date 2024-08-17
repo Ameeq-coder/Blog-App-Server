@@ -59,7 +59,8 @@ router.post("/register", async (req, res) => {
         const user = new User({
             email,
             password: hashedPassword,
-            categories: [] // Initialize with an empty array
+            categories: [],
+             // Initialize with an empty array
         });
 
         await user.save();
@@ -117,6 +118,57 @@ router.patch("/:userId/categories", async (req, res) => {
   }
 });
 
+router.post("/:userId/tags", async (req, res) => {
+  const { userId } = req.params;
+  const { tag, slug } = req.body;
 
-  
+  console.log("Request body:", req.body);
+
+  try {
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ msg: "User Not Found" });
+    }
+
+    console.log("User found:", user);
+
+    const existingTagIndex = user.tags.findIndex(t => t.tag === tag);
+
+    if (existingTagIndex === -1) {
+      user.tags.push({ tag, slug });
+    } else {
+      user.tags[existingTagIndex].slug = slug;
+    }
+
+    await user.save();
+
+    console.log("Updated tags:", user.tags);
+
+    res.status(200).json({ msg: 'Tag and slug added/updated successfully', tags: user.tags });
+
+  } catch (err) {
+    res.status(500).json({ msg: err.message });
+  }
+});
+router.get("/:userId/tags", async (req,res)=>{
+
+const { userId}= req.params;
+
+try{
+  const user= await User.findById(userId);
+
+  if(!user){
+    return res.status(404).json({msg:"User Not Found"});
+  }
+
+  res.status(200).json({tags:user.tags});
+}catch(err){
+  res.status(500).json({msg:err.message})
+}
+});
+ 
+
+
+
 module.exports = router;
