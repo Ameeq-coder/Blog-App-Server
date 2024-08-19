@@ -169,7 +169,39 @@ try{
 }
 });
  
+router.patch("/:userId/tags", async (req, res) => {
+  const { userId } = req.params;
+  const { oldTag, newTag, newSlug } = req.body;
 
+  console.log("Request Body:", req.body);
+
+  try {
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ msg: "User Not Found" });
+    }
+
+    const tagIndex = user.tags.findIndex(t => t.tag === oldTag);
+
+    if (tagIndex === -1) {
+      return res.status(404).json({ msg: "Tag Not Found" });
+    }
+
+    user.tags[tagIndex] = { tag: newTag, slug: newSlug };
+
+    // Save the updated user document
+    await user.save();
+
+    // Respond with the updated tag
+    res.status(200).json({
+      msg: 'Tag updated successfully',
+      tag: user.tags[tagIndex] // Return the updated tag
+    });
+  } catch (err) {
+    res.status(500).json({ msg: err.message });
+  }
+});
 
 
 module.exports = router;
