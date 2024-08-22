@@ -204,4 +204,36 @@ router.patch("/:userId/tags", async (req, res) => {
 });
 
 
+router.delete("/:userId/tags", async (req, res) => {
+  const { userId } = req.params;
+  const { tag } = req.body;
+
+  try {
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ msg: "User Not Found" });
+    }
+
+    const initialTagCount = user.tags.length;
+
+    // Filter out the tag that matches the provided tag name
+    user.tags = user.tags.filter(
+      (t) => t.tag.trim().toLowerCase() !== tag.trim().toLowerCase()
+    );
+
+    // Check if any tag was removed
+    if (user.tags.length < initialTagCount) {
+      await user.save();
+      return res.status(200).json({ msg: "Tag Deleted Successfully", tags: user.tags });
+    } else {
+      return res.status(404).json({ msg: "Tag Not Found" });
+    }
+  } catch (err) {
+    res.status(500).json({ msg: err.message });
+  }
+});
+
+
+
 module.exports = router;
