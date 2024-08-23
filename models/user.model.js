@@ -12,7 +12,12 @@ const userSchema = new Schema({
       slug: { type: String, required: true }
     }
   ],
-  
+  blogcategories: [
+    {
+      blogcategory: { type: String, required: true },
+      slug: { type: String, required: true }
+    }
+  ],
 });
 
 module.exports = mongoose.model("User", userSchema);

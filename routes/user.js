@@ -233,7 +233,126 @@ router.delete("/:userId/tags", async (req, res) => {
     res.status(500).json({ msg: err.message });
   }
 });
+ 
+/// Blog Categoriesapis
+
+router.post("/:userId/blogcategories", async (req, res) => {
+  const { userId } = req.params;
+  const { blogcategory, slug } = req.body;
+
+  console.log("Request body:", req.body);
+
+  try {
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ msg: "User Not Found" });
+    }
+
+    console.log("User found:", user);
+
+    const existingBlogCategoryIndex = user.blogcategories.findIndex(bc => bc.blogcategory === blogcategory);
+
+    if (existingBlogCategoryIndex === -1) {
+      user.blogcategories.push({ blogcategory, slug });
+    } else {
+      user.blogcategories[existingBlogCategoryIndex].slug = slug;
+    }
+
+    await user.save();
+
+    console.log("Updated blog categories:", user.blogcategories);
+
+    res.status(200).json({ msg: 'Blog category and slug added/updated successfully', blogcategories: user.blogcategories });
+
+  } catch (err) {
+    res.status(500).json({ msg: err.message });
+  }
+});
 
 
+router.get("/:userId/blogcategories", async (req,res)=>{
+
+  const { userId}= req.params;
+  
+  try{
+    const user= await User.findById(userId);
+  
+    if(!user){
+      return res.status(404).json({msg:"User Not Found"});
+    }
+  
+    res.status(200).json({blogcategories:user.blogcategories});
+  }catch(err){
+    res.status(500).json({msg:err.message})
+  }
+  });
+
+  router.patch("/:userId/blogcategories", async (req, res) => {
+    const { userId } = req.params;
+    const { oldBlogCategory, newBlogCategory, newSlug } = req.body;
+  
+    console.log("Request Body:", req.body);
+  
+    try {
+      const user = await User.findById(userId);
+  
+      if (!user) {
+        return res.status(404).json({ msg: "User Not Found" });
+      }
+  
+      const blogCategoryIndex = user.blogcategories.findIndex(bc => bc.blogcategory === oldBlogCategory);
+  
+      if (blogCategoryIndex === -1) {
+        return res.status(404).json({ msg: "Blog category Not Found" });
+      }
+  
+      user.blogcategories[blogCategoryIndex] = { blogcategory: newBlogCategory, slug: newSlug };
+  
+      // Save the updated user document
+      await user.save();
+  
+      // Respond with the updated blog category
+      res.status(200).json({
+        msg: 'Blog category updated successfully',
+        blogcategory: user.blogcategories[blogCategoryIndex] // Return the updated blog category
+      });
+    } catch (err) {
+      res.status(500).json({ msg: err.message });
+    }
+  });
+
+  router.delete("/:userId/blogcategories", async (req, res) => {
+    const { userId } = req.params;
+    const { blogcategory } = req.body;
+  
+    try {
+      const user = await User.findById(userId);
+  
+      if (!user) {
+        return res.status(404).json({ msg: "User Not Found" });
+      }
+  
+      const initialBlogCategoryCount = user.blogcategories.length;
+  
+      // Filter out the blog category that matches the provided blogcategory name
+      user.blogcategories = user.blogcategories.filter(
+        (bc) => bc.blogcategory.trim().toLowerCase() !== blogcategory.trim().toLowerCase()
+      );
+  
+      // Check if any blog category was removed
+      if (user.blogcategories.length < initialBlogCategoryCount) {
+        await user.save();
+        return res.status(200).json({ msg: "Blog category Deleted Successfully", blogcategories: user.blogcategories });
+      } else {
+        return res.status(404).json({ msg: "Blog category Not Found" });
+      }
+    } catch (err) {
+      res.status(500).json({ msg: err.message });
+    }
+  });
+  
+
+  
 
 module.exports = router;
