@@ -4,7 +4,9 @@ const User = require("../models/user.model");
 const config = require('../config');  // Corrected the typo from 'confiq' to 'config'
 const jwt=   require("jsonwebtoken")
 const middleware= require("../middleware")
-
+const { upload } = require('../cloudinary'); // Cloudinary upload middleware
+const Post = require('../models/Post')
+const AggregatedPost = require('../models/AggregatedPost'); // Import the AggregatedPost model
 
 const router = express.Router();
 router.route("/login").post(async (req, res) => {
@@ -118,6 +120,9 @@ router.patch("/:userId/categories", async (req, res) => {
       res.status(500).json({ msg: err.message });
   }
 });
+
+// Tags Apis
+
 
 router.post("/:userId/tags", async (req, res) => {
   const { userId } = req.params;
@@ -352,7 +357,79 @@ router.get("/:userId/blogcategories", async (req,res)=>{
     }
   });
   
+// blogpost
 
+router.post('/:userId/blogpost', upload.single('featuredImage'), async (req, res) => {
+  const { userId } = req.params;
+  const { title, slug, categories, tags, content } = req.body;
+
+  try {
+      const user = await User.findById(userId);
+      if (!user) {
+          return res.status(404).json({ msg: "User not found" });
+      }
+
+      const post = new Post({
+          userId,
+          title,
+          categories: categories.split(','),
+          tags: tags.split(','),
+          content,
+          slug,
+          featuredImage: req.file.path
+      });
+
+      await post.save();
+      user.posts.push(post._id);
+      await user.save();
+
+      // Save to AggregatedPost collection
+      const aggregatedPost = new AggregatedPost({
+          userId,
+          title,
+          categories: categories.split(','),
+          tags: tags.split(','),
+          content,
+          slug,
+          featuredImage: req.file.path
+      });
+
+      await aggregatedPost.save();
+
+      res.status(201).json({ msg: "Post Created Successfully", post });
+  } catch (err) {
+      res.status(500).json({ msg: err.message });
+  }
+});
+
+
+router.get('/allposts', async (req, res) => {
+  try {
+      const posts = await AggregatedPost.find();
+      res.status(200).json(posts);
+  } catch (err) {
+      res.status(500).json({ msg: err.message });
+  }
+});
+
+  // In your user.js or relevant routes file
+router.get('/:userId/blogpost', async (req, res) => {
+  const { userId } = req.params;
   
+  try {
+      const posts = await Post.find({ userId: userId });
+      if (posts.length === 0) {
+          return res.status(404).json({ msg: "No posts found for this user" });
+      }
+      res.status(200).json(posts);
+  } catch (err) {
+      res.status(500).json({ msg: err.message });
+  }
+});
+
+
+
+
+
 
 module.exports = router;
