@@ -428,6 +428,67 @@ router.get('/:userId/blogpost', async (req, res) => {
 });
 
 
+// Fetch posts by category
+router.get('/posts/category/:category', async (req, res) => {
+  const { category } = req.params;
+
+  try {
+    // Find posts that include the specified category
+    const posts = await AggregatedPost.find({ categories: category });
+
+    // Check if posts were found
+    if (posts.length === 0) {
+      return res.status(404).json({ msg: "No posts found for this category" });
+    }
+
+    res.status(200).json(posts);
+  } catch (err) {
+    res.status(500).json({ msg: err.message });
+  }
+});
+
+
+router.get("/:userId/categories", async (req,res)=>{
+const { userId }=req.params;
+try{
+  const user = await User.findById(userId).select('categories'); // Only select the 'categories' field
+
+  if (!user) {
+    return res.status(404).json({ msg: "User not found" });
+  }
+
+  res.status(200).json({ categories: user.categories });
+} catch (err){
+  res.status(500).json({ msg: err.message });
+}
+
+});
+
+// GET route to search for posts by title
+router.get('/search', async (req, res) => {
+  let { title } = req.query;
+
+  // Check if title is provided and is a string
+  if (!title || typeof title !== 'string') {
+    return res.status(400).json({ msg: "Title parameter is required and should be a string" });
+  }
+
+  try {
+    // Trim the title to remove any extra whitespace
+    title = title.trim();
+
+    // Search for posts with titles that match the query, using case-insensitive regex
+    const posts = await Post.find({ title: { $regex: title, $options: 'i' } });
+
+    if (posts.length === 0) {
+      return res.status(404).json({ msg: "No posts found" });
+    }
+
+    res.status(200).json(posts);
+  } catch (err) {
+    res.status(500).json({ msg: err.message });
+  }
+});
 
 
 
