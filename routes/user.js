@@ -433,8 +433,8 @@ router.get('/posts/category/:category', async (req, res) => {
   const { category } = req.params;
 
   try {
-    // Find posts that include the specified category
-    const posts = await AggregatedPost.find({ categories: category });
+    // Find posts that include the specified category in the categories array
+    const posts = await AggregatedPost.find({ categories: { $in: [category] } });
 
     // Check if posts were found
     if (posts.length === 0) {
@@ -446,6 +446,7 @@ router.get('/posts/category/:category', async (req, res) => {
     res.status(500).json({ msg: err.message });
   }
 });
+
 
 
 router.get("/:userId/categories", async (req,res)=>{
