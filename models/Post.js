@@ -9,7 +9,10 @@ const postSchema = new mongoose.Schema({
     content: { type: String, required: true },
     featuredImage: { type: String, required: true },
     // URL from Cloudinary
-    createdAt: { type: Date, default: Date.now }
+    createdAt: { type: Date, default: Date.now },
+    channelName: { type: String, required: true }, // Adding channelName to schema
+    views: { type: Number, default: 0 },  // Add views field to track post views
+
 });
 
 const Post = mongoose.model('Post', postSchema);

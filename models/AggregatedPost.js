@@ -8,7 +8,9 @@ const aggregatedPostSchema = new mongoose.Schema({
     tags: [{ type: String, required: true }],
     content: { type: String, required: true },
     featuredImage: { type: String, required: true },
+    views: { type: Number, default: 0 },  // Add views field to track post views
      // URL from Cloudinary
+     channelName: { type: String, required: true }, // Adding channelName to schema
     createdAt: { type: Date, default: Date.now }
 });
 
