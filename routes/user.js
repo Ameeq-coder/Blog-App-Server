@@ -499,18 +499,38 @@ router.get('/search', async (req, res) => {
     // Trim the title to remove any extra whitespace
     title = title.trim();
 
-    // Search for posts with titles that match the query, using case-insensitive regex
-    const posts = await Post.find({ title: { $regex: title, $options: 'i' } });
+    // Construct a case-insensitive regex to search for the title
+    const regex = new RegExp(title, 'i'); // 'i' makes the search case-insensitive
 
+    // Search for posts with titles that match the query using regex
+    const posts = await Post.find({ title: { $regex: regex } });
+
+    // If no posts are found, return a 404 response with suggestions
     if (posts.length === 0) {
-      return res.status(404).json({ msg: "No posts found" });
+      // Find related or suggested posts if exact matches are not found
+      const suggestedPosts = await Post.find({
+        title: { $regex: regex }
+      }).limit(5); // You can limit the number of suggestions if needed
+
+      // Return a response with suggestions
+      if (suggestedPosts.length > 0) {
+        return res.status(200).json({
+          msg: "No exact matches found, showing suggested posts",
+          suggestions: suggestedPosts
+        });
+      } else {
+        return res.status(404).json({ msg: "No posts or suggestions found" });
+      }
     }
 
+    // Return the found posts
     res.status(200).json(posts);
   } catch (err) {
     res.status(500).json({ msg: err.message });
   }
 });
+
+
 
 
 router.get('/download/:postId/:userId', async (req, res) => {
@@ -601,6 +621,26 @@ router.get('/download/:postId/:userId', async (req, res) => {
   }
 });
 
+
+router.get('/:userId/downloads', async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+      // Find the user by their ID
+      const user = await User.findById(userId).populate('downloads'); // Populate the downloads with post data
+
+      if (!user) {
+          return res.status(404).json({ msg: 'User not found' });
+      }
+
+      // Return the downloaded posts
+      res.status(200).json({ downloads: user.downloads });
+  } catch (err) {
+      res.status(500).json({ msg: err.message });
+  }
+});
+
+
 // API to fetch a specific post by its ID
 router.get('/post/:postId', async (req, res) => {
   const { postId } = req.params;
@@ -638,29 +678,29 @@ router.post('/:userId/favorites/:postId', async (req, res) => {
     }
 
     // Check if the post exists
-    const post = await AggregatedPost.findById(postId).populate('categories tags'); // Populate category and tags if they are referenced
+    const post = await AggregatedPost.findById(postId).populate('categories tags');
     if (!post) {
       return res.status(404).json({ msg: "Post not found" });
     }
 
     // Check if the post is already in the user's favorites
-    if (user.favorites.includes(postId)) {
+    const alreadyFavorited = user.favorites.some(favorite => favorite.id.toString() === postId);
+    if (alreadyFavorited) {
       return res.status(400).json({ msg: "Post is already in favorites" });
     }
 
-    // Add the post to the user's favorites
-    user.favorites.push(postId);
-    await user.save();
-
-    // Respond with post details
+    // Add the entire post details to the user's favorites
     const postDetails = {
       id: post._id,
       title: post.title,
       content: post.content,
-      featuredImage: post.featuredImage,  // Assuming post.image is the field for the image URL
+      featuredImage: post.featuredImage,
       categories: post.categories,
       tags: post.tags,
     };
+
+    user.favorites.push(postDetails);
+    await user.save();
 
     res.status(200).json({ msg: "Post added to favorites", post: postDetails });
   } catch (err) {
@@ -668,37 +708,56 @@ router.post('/:userId/favorites/:postId', async (req, res) => {
   }
 });
 
+router.get('/:userId/favorites', async (req, res) => {
+  const { userId } = req.params;
 
-router.delete('/:userId/favorites/:postId', async (req,res)=>{
+  try {
+    // Find the user by their ID
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ msg: "User not found" });
+    }
 
-  const { userId, postId } = req.params;
+    if (user.favorites.length === 0) {
+      return res.status(200).json({ msg: "No favorites found", favorites: [] });
+    }
 
-
-try{
-
-const user= await User.findById(userId);
-if(!user){
-  return res.status(404).json({msg:"User Not Found"});
-}
-
-
-const isFavorite=user.favorites.includes(postId);
-if (!isFavorite) {
-  return res.status(400).json({ msg: "Post is not in favorites" });
-}
-user.favorites= user.favorites.filter(favPostId => favPostId.toString() !== postId);
-await user.save();
-
-
-res.status(200).json({ msg: "Post removed from favorites" });
-
-}catch (err) {
+    res.status(200).json({ msg: "Favorites fetched successfully", favorites: user.favorites });
+  } catch (err) {
     res.status(500).json({ msg: err.message });
   }
-
-
 });
 
+
+router.delete('/:userId/favorites/:postId', async (req, res) => {
+  const { userId, postId } = req.params;
+
+  try {
+    // Find the user by their ID
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ msg: "User Not Found" });
+    }
+
+    // Check if the post is in the user's favorites by comparing the id field in each favorite
+    const isFavorite = user.favorites.some(favPost => favPost.id.toString() === postId);
+    if (!isFavorite) {
+      return res.status(400).json({ msg: "Post is not in favorites" });
+    }
+
+    // Filter out the post from the user's favorites
+    user.favorites = user.favorites.filter(favPost => favPost.id.toString() !== postId);
+    await user.save();
+
+    res.status(200).json({ msg: "Post removed from favorites" });
+  } catch (err) {
+    res.status(500).json({ msg: err.message });
+  }
+});
+
+
+
+// Channel
 
 router.post('/channels/signup', async (req, res) => {
   const { channelName, password } = req.body;
@@ -771,6 +830,44 @@ router.post('/post/:postId/view', async (req, res) => {
     await post.save();
 
     res.status(200).json({ msg: "Post viewed", views: post.views });
+  } catch (err) {
+    res.status(500).json({ msg: err.message });
+  }
+});
+
+
+router.get('/:userId/email', async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    // Find the user by ID
+    const user = await User.findById(userId);
+    
+    if (!user) {
+      return res.status(404).json({ msg: "User not found" });
+    }
+
+    // Respond with the user's email
+    res.status(200).json({ email: user.email });
+  } catch (err) {
+    res.status(500).json({ msg: err.message });
+  }
+});
+
+
+router.get('/channel/:channelId', async (req, res) => {
+  const { channelId } = req.params;
+
+  try {
+    // Find the channel by ID and ensure it has the role of 'creator'
+    const channel = await User.findById(channelId);
+    
+    if (!channel || channel.role !== 'creator') {
+      return res.status(404).json({ msg: "Channel not found" });
+    }
+
+    // Respond with the channel name
+    res.status(200).json({ channelName: channel.channelName });
   } catch (err) {
     res.status(500).json({ msg: err.message });
   }

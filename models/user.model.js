@@ -47,7 +47,18 @@ const userSchema = new Schema({
     }
   ],
 
-  favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],  // Add a field to store favorite posts
+  favorites: [{
+    type: {
+      id: { type: mongoose.Schema.Types.ObjectId, ref: 'AggregatedPost' },
+      title: String,
+      content: String,
+      featuredImage: String,
+      categories: [{ type: String }],  // Allow categories to be an array of strings
+      tags: [{ type: String }]  // Allow tags to be an array of strings
+
+    },
+    unique: true, // Optional: Prevent duplicate favorites
+  }],
   
   role: {
     type: String,
