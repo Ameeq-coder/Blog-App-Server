@@ -7,6 +7,10 @@ const userSchema = new Schema({
   password: { type: String, required: true },
   channelName: { type: String, unique: true, sparse: true },  // Channel Name for creators (channels)
   
+  channelDescription: { type: String },  // Added for storing channel description
+  channelImage: { type: String }, 
+
+
   categories: { type: [String], default: [] },
   tags: [
     {

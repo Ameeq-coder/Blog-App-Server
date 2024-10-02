@@ -423,6 +423,107 @@ router.post('/:userId/blogpost', upload.single('featuredImage'), async (req, res
   }
 });
 
+router.delete('/:userId/blogpost/:postId', async (req, res) => {
+  const { userId, postId } = req.params;
+
+  try {
+      // Find the user by ID
+      const user = await User.findById(userId);
+      if (!user) {
+          return res.status(404).json({ msg: "User not found" });
+      }
+
+      // Find the post by ID
+      const post = await Post.findById(postId);
+      if (!post) {
+          return res.status(404).json({ msg: "Post not found" });
+      }
+
+      // Check if the post belongs to the user
+      if (post.userId.toString() !== userId) {
+          return res.status(403).json({ msg: "Unauthorized: This post does not belong to the user" });
+      }
+
+      // Delete the post
+      await Post.findByIdAndDelete(postId);
+
+      // Remove the post from the user's posts array
+      user.posts = user.posts.filter(id => id.toString() !== postId);
+      await user.save();
+
+      // Remove the post from the AggregatedPost collection
+      await AggregatedPost.findOneAndDelete({ userId, _id: postId });
+
+      res.status(200).json({ msg: "Post deleted successfully" });
+  } catch (err) {
+      res.status(500).json({ msg: err.message });
+  }
+});
+
+router.put('/:userId/blogpost/:postId', upload.single('featuredImage'), async (req, res) => {
+  const { userId, postId } = req.params;
+  const { title, slug, categories, tags, content } = req.body;
+
+  try {
+      // Find the user by ID
+      const user = await User.findById(userId);
+      if (!user) {
+          return res.status(404).json({ msg: "User not found" });
+      }
+
+      // Find the post by ID
+      const post = await Post.findById(postId);
+      if (!post) {
+          return res.status(404).json({ msg: "Post not found" });
+      }
+
+      // Check if the post belongs to the user
+      if (post.userId.toString() !== userId) {
+          return res.status(403).json({ msg: "Unauthorized: This post does not belong to the user" });
+      }
+
+      // Ensure channelName is present
+      const channelName = post.channelName || user.channelName;
+      if (!channelName) {
+          return res.status(400).json({ msg: "Channel name not found for this user" });
+      }
+
+      // Update post fields
+      post.title = title || post.title;
+      post.slug = slug || post.slug;
+      post.categories = categories ? categories.split(',') : post.categories;
+      post.tags = tags ? tags.split(',') : post.tags;
+      post.content = content || post.content;
+      post.channelName = channelName; // Ensure channelName is set
+      if (req.file) {
+          post.featuredImage = req.file.path; // Update image if provided
+      }
+
+      // Save the updated post
+      await post.save();
+
+      // Update the corresponding AggregatedPost if needed
+      const aggregatedPost = await AggregatedPost.findOne({ userId, _id: postId });
+      if (aggregatedPost) {
+          aggregatedPost.title = title || aggregatedPost.title;
+          aggregatedPost.slug = slug || aggregatedPost.slug;
+          aggregatedPost.categories = categories ? categories.split(',') : aggregatedPost.categories;
+          aggregatedPost.tags = tags ? tags.split(',') : aggregatedPost.tags;
+          aggregatedPost.content = content || aggregatedPost.content;
+          aggregatedPost.channelName = channelName; // Ensure channelName is set
+          if (req.file) {
+              aggregatedPost.featuredImage = req.file.path; // Update image if provided
+          }
+
+          // Save the updated aggregated post
+          await aggregatedPost.save();
+      }
+
+      res.status(200).json({ msg: "Post updated successfully", post });
+  } catch (err) {
+      res.status(500).json({ msg: err.message });
+  }
+});
 
 router.get('/allposts', async (req, res) => {
   try {
@@ -873,6 +974,89 @@ router.get('/channel/:channelId', async (req, res) => {
   }
 });
 
+
+
+router.post('/:userId/channel', upload.single('channelImage'), async (req, res) => {
+  const { userId } = req.params;
+  const { channelDescription } = req.body;
+
+  try {
+    // Find the user by ID
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ msg: "User not found" });
+    }
+
+    // Update the channel description if provided
+    if (channelDescription) {
+      user.channelDescription = channelDescription;
+    }
+
+    // Update the channel image if a file is uploaded
+    if (req.file && req.file.path) {
+      user.channelImage = req.file.path; // The path will be the URL provided by Cloudinary
+    }
+
+    // Save the updated user document
+    await user.save();
+
+    res.status(200).json({ msg: "Channel updated successfully", user });
+  } catch (err) {
+    res.status(500).json({ msg: err.message });
+  }
+});
+
+
+router.get('/:userId/channel', async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    // Find the user by ID
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ msg: "User not found" });
+    }
+
+    // Return the channel description and image
+    res.status(200).json({
+      channelDescription: user.channelDescription,
+      channelImage: user.channelImage,
+    });
+  } catch (err) {
+    res.status(500).json({ msg: err.message });
+  }
+});
+
+
+router.put('/:userId/channel', upload.single('channelImage'), async (req, res) => {
+  const { userId } = req.params;
+  const { channelDescription } = req.body;
+
+  try {
+    // Find the user by ID
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ msg: "User not found" });
+    }
+
+    // Update the channel description if provided
+    if (channelDescription) {
+      user.channelDescription = channelDescription;
+    }
+
+    // Update the channel image if a file is uploaded
+    if (req.file && req.file.path) {
+      user.channelImage = req.file.path; // Cloudinary file URL
+    }
+
+    // Save the updated user document
+    await user.save();
+
+    res.status(200).json({ msg: "Channel updated successfully", user });
+  } catch (err) {
+    res.status(500).json({ msg: err.message });
+  }
+});
 
 
 
