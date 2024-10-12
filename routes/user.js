@@ -434,7 +434,7 @@ router.delete('/:userId/blogpost/:postId', async (req, res) => {
       }
 
       // Find the post by ID
-      const post = await Post.findById(postId);
+      const post = await AggregatedPost.findById(postId);
       if (!post) {
           return res.status(404).json({ msg: "Post not found" });
       }
@@ -445,7 +445,7 @@ router.delete('/:userId/blogpost/:postId', async (req, res) => {
       }
 
       // Delete the post
-      await Post.findByIdAndDelete(postId);
+      await AggregatedPost.findByIdAndDelete(postId);
 
       // Remove the post from the user's posts array
       user.posts = user.posts.filter(id => id.toString() !== postId);
