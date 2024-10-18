@@ -472,7 +472,7 @@ router.put('/:userId/blogpost/:postId', upload.single('featuredImage'), async (r
       }
 
       // Find the post by ID
-      const post = await Post.findById(postId);
+      const post = await AggregatedPost.findById(postId);
       if (!post) {
           return res.status(404).json({ msg: "Post not found" });
       }
